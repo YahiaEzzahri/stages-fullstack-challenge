@@ -67,20 +67,10 @@ return [
     |
     */
 
-    'timezone' => 'America/Los_Angeles',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Application Locale Configuration
-    |--------------------------------------------------------------------------
-    |
-    | The application locale determines the default locale that will be used
-    | by the translation service provider. You are free to set this value
-    | to any of the locales which will be supported by the application.
-    |
-    */
-
-    'locale' => 'en',
+        // Changez ces lignes:
+        'timezone' => 'Europe/Paris',  // ✅ Timezone française
+        'locale' => 'fr',              // ✅ Langue française
+        'fallback_locale' => 'fr',
 
     /*
     |--------------------------------------------------------------------------
