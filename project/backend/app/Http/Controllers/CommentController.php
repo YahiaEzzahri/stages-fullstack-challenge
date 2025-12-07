@@ -45,16 +45,15 @@ class CommentController extends Controller
     {
         $comment = Comment::findOrFail($id);
         $articleId = $comment->article_id;
-
         $comment->delete();
-
+        
+        // ✅ Correction: vérifier si des commentaires restent
         $remainingComments = Comment::where('article_id', $articleId)->get();
-        $firstComment = $remainingComments[0];
-
+        
         return response()->json([
-            'message' => 'Comment deleted successfully',
+            'success' => true,
             'remaining_count' => $remainingComments->count(),
-            'first_remaining' => $firstComment,
+            'first' => $remainingComments->first() // Renvoie null si vide
         ]);
     }
 
