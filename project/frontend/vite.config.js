@@ -10,6 +10,22 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // AJOUTEZ CETTE SECTION PROXY :
+    proxy: {
+      '/api': {
+        target: 'http://backend:8000', // ou 'http://localhost:8000'
+        changeOrigin: true,
+        secure: false,
+      },
+      '/sanctum': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/storage': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })
-

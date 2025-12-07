@@ -53,4 +53,3 @@ class StatsController extends Controller
         ]);
     }
 }
-
