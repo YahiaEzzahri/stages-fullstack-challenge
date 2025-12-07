@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    /**
-     * Handle user login.
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -24,7 +21,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        if ($user->password !== $credentials['password']) {
+        // ✅ Vérification sécurisée
+        if (!Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -38,9 +36,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Handle user registration.
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -52,7 +47,8 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => $validated['password'],
+            // ✅ Hash du mot de passe
+            'password' => Hash::make($validated['password']),
         ]);
 
         return response()->json([
@@ -65,9 +61,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Get current user info.
-     */
     public function me(Request $request)
     {
         $userId = $request->input('user_id');
@@ -89,4 +82,3 @@ class AuthController extends Controller
         ]);
     }
 }
-

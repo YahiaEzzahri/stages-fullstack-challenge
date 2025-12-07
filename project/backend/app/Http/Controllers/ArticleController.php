@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -132,11 +133,26 @@ class ArticleController extends Controller
      * Remove the specified article.
      */
     public function destroy($id)
-    {
-        $article = Article::findOrFail($id);
-        $article->delete();
+{
+    // 1. Récupérer le commentaire à supprimer
+    $comment = Comment::findOrFail($id);
 
-        return response()->json(['message' => 'Article deleted successfully']);
-    }
+    // 2. Sauvegarder l'ID de l'article AVANT suppression
+    $articleId = $comment->article_id;
+
+    // 3. Supprimer le commentaire
+    $comment->delete();
+    
+    // 4. Récupérer tous les commentaires restants de l'article
+    $remainingComments = Comment::where('article_id', $articleId)->get();
+    
+    
+    return response()->json([
+        'success' => true,
+        'remaining_count' => $remainingComments->count(),
+        'first' => $remainingComments->first()
+    ]);
+}
+
 }
 
