@@ -95,12 +95,6 @@ class ArticleController extends Controller
     {
         $query = $request->input('q');
         if (!$query) return response()->json([]);
-
-        $articles = DB::select(
-            "SELECT * FROM articles WHERE title LIKE ?",
-            ["%{$query}%"]
-        );
-
         return response()->json(array_map(fn($article) => [
             'id' => $article->id,
             'title' => $article->title,
@@ -127,6 +121,7 @@ class ArticleController extends Controller
             'published_at' => now(),
         ]);
 
+
         Cache::forget('articles:list');
         Cache::forget('stats');
 
@@ -145,6 +140,7 @@ class ArticleController extends Controller
 
         $article->update($validated);
 
+
         Cache::forget('articles:list');
         Cache::forget('stats');
 
@@ -156,11 +152,6 @@ class ArticleController extends Controller
     {
         $article = Article::with('comments')->findOrFail($id);
 
-        $article->comments()->delete();
-        $article->delete();
-
-        Cache::forget('articles:list');
-        Cache::forget('stats');
 
         return response()->json([
             'message' => 'Article and related comments deleted successfully',
