@@ -203,9 +203,8 @@ Ce challenge a testé mes compétences réelles de développeur. J'ai démontré
 ## 📬 Contact
 
 Pour toute question concernant ce challenge :
-- 📧 Email : votre.email@exemple.com
-- 💼 LinkedIn : [Votre profil LinkedIn]
-- 🐙 GitHub : [@votre-username](https://github.com/votre-username)
+- 📧 Email : Yahiaezzahri@gmail.com
+- 🐙 GitHub : [@Yahia_Ezzahri](https://github.com/votre-username)
 
 ---
 
