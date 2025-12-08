@@ -44,7 +44,7 @@ Vous recevez une **plateforme de gestion de blog** fonctionnelle (Laravel + Reac
 
 | Catégorie | Tickets résolus | Statut |
 |-----------|----------------|--------|
-| 🐛 Bugs | 4/4 | ✅ 80% |
+| 🐛 Bugs | 4/4 | ✅ 100% |
 | 🔒 Sécurité | 3/3 | ✅ 100% |
 | ⚡ Performance | 1/3 | ✅ 33% |
 | **TOTAL** | **8/10** | **✅ 80%** |
