@@ -185,7 +185,7 @@ Ce challenge a testé mes compétences réelles de développeur. J'ai démontré
 
 Pour toute question concernant ce challenge :
 - 📧 Email : Yahiaezzahri@gmail.com
-- 🐙 GitHub : [@Yahia_Ezzahri](https://github.com/votre-username)
+- 🐙 GitHub : [Yahia_Ezzahri](https://github.com/Yahia_Ezzahri)
 
 ---
 
