@@ -110,25 +110,6 @@ Voir **[CHALLENGE.md](./CHALLENGE.md)** pour les détails du workflow Git
 | 9 | PERF-002 | ⚡ Performance | Contraintes de temps (période d'examens) |
 | 10 | TECH-002 | 🔧 Technique | Priorisation sur les tickets critiques |
 
----
-
-## 🖼️ Captures d'écran
-
-### Interface principale de l'application
-
-![Capture d'écran de l'application](./docs/screenshots/app-homepage.png)
-*Page d'accueil avec liste des articles*
-
-### Tableau de bord administrateur
-
-![Tableau de bord](./docs/screenshots/admin-dashboard.png)
-*Interface d'administration après corrections*
-
-> [!TIP]
-> Les captures d'écran sont disponibles dans le dossier `/docs/screenshots/`
-
----
-
 ## ⏱️ Durée
 
 **Format flexible** : Prenez le temps nécessaire, vous pouvez travailler en plusieurs sessions.
