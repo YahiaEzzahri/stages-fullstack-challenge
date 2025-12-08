@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -11,75 +10,64 @@ use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
 {
-    /**
-     * Display a listing of articles.
-     */
-public function index(Request $request)
-{
-    $cacheKey = 'articles:list';
-    
-    // Mode performance test
-    if ($request->has('performance_test')) {
-        DB::enableQueryLog();
-        
-        // EAGER LOADING OPTIMISE
-        $items = Article::with(['author', 'comments'])->get();
-        
-        // Compter les requêtes
-        $queries = DB::getQueryLog();
-        $queryCount = count($queries);
-        
-        // Formater la réponse avec métriques
-        $articles = $items->map(fn($article) => [
-            'id' => $article->id,
-            'title' => $article->title,
-            'content' => strlen($article->content) > 200 
-                ? substr($article->content, 0, 200) . '...' 
-                : $article->content,
-            'author' => $article->author->name,
-            'comments_count' => $article->comments->count(),
-            'published_at' => $article->published_at,
-            'created_at' => $article->created_at,
-        ]);
-        
-        // Ajouter les métriques de performance
-        $response = [
-            'data' => $articles,
-            'performance' => [
-                'query_count' => $queryCount,
-                'optimization' => 'eager_loading',
-                'expected_queries' => 3,
-                'status' => $queryCount <= 3 ? 'optimized' : 'needs_optimization'
-            ]
-        ];
-        
-        Log::info("PERF-001: $queryCount queries (optimized with eager loading)");
-        
-        return response()->json($response);
-    }
-    
-    // Mode normal avec cache
-    $articles = Cache::remember($cacheKey, 60, function () {
-        $items = Article::with(['author', 'comments'])->get();
-        return $items->map(fn($article) => [
-            'id' => $article->id,
-            'title' => $article->title,
-            'content' => strlen($article->content) > 200 
-                ? substr($article->content, 0, 200) . '...' 
-                : $article->content,
-            'author' => $article->author->name,
-            'comments_count' => $article->comments->count(),
-            'published_at' => $article->published_at,
-            'created_at' => $article->created_at,
-        ]);
-    });
-    
-    return response()->json($articles);
-}
+    // Liste des articles
+    public function index(Request $request)
+    {
+        $cacheKey = 'articles:list';
 
-    /**
-     * Display the specified article.
-     */
+        // Mode performance test
+        if ($request->has('performance_test')) {
+            DB::enableQueryLog();
+
+            $items = Article::with(['author', 'comments'])->get();
+
+            $queryCount = count(DB::getQueryLog());
+
+            $articles = $items->map(fn($article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => strlen($article->content) > 200 
+                    ? substr($article->content, 0, 200) . '...' 
+                    : $article->content,
+                'author' => $article->author->name,
+                'comments_count' => $article->comments->count(),
+                'published_at' => $article->published_at,
+                'created_at' => $article->created_at,
+            ]);
+
+            Log::info("PERF-001: $queryCount queries (optimized with eager loading)");
+
+            return response()->json([
+                'data' => $articles,
+                'performance' => [
+                    'query_count' => $queryCount,
+                    'optimization' => 'eager_loading',
+                    'expected_queries' => 3,
+                    'status' => $queryCount <= 3 ? 'optimized' : 'needs_optimization'
+                ]
+            ]);
+        }
+
+        // Mode normal avec cache
+        $articles = Cache::remember($cacheKey, 60, function () {
+            $items = Article::with(['author', 'comments'])->get();
+            return $items->map(fn($article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => strlen($article->content) > 200 
+                    ? substr($article->content, 0, 200) . '...' 
+                    : $article->content,
+                'author' => $article->author->name,
+                'comments_count' => $article->comments->count(),
+                'published_at' => $article->published_at,
+                'created_at' => $article->created_at,
+            ]);
+        });
+
+        return response()->json($articles);
+    }
+
+    // Détail d’un article
     public function show($id)
     {
         $article = Article::with(['author', 'comments.user'])->findOrFail($id);
@@ -93,100 +81,97 @@ public function index(Request $request)
             'image_path' => $article->image_path,
             'published_at' => $article->published_at,
             'created_at' => $article->created_at,
-            'comments' => $article->comments->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'user' => $comment->user->name,
-                    'created_at' => $comment->created_at,
-                ];
-            }),
+            'comments' => $article->comments->map(fn($comment) => [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'user' => $comment->user->name,
+                'created_at' => $comment->created_at,
+            ]),
         ]);
     }
 
-    /**
-     * Search articles.
-     */
-public function search(Request $request)
-{
-    $query = $request->input('q');
+    // Recherche sécurisée
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+        if (!$query) return response()->json([]);
 
-    if (!$query) {
-        return response()->json([]);
+        $articles = DB::select(
+            "SELECT * FROM articles WHERE title LIKE ?",
+            ["%{$query}%"]
+        );
+
+        return response()->json(array_map(fn($article) => [
+            'id' => $article->id,
+            'title' => $article->title,
+            'content' => substr($article->content, 0, 200),
+            'published_at' => $article->published_at,
+        ], $articles));
     }
 
-    $articles = Article::where('title', 'LIKE', "%{$query}%")
-        ->orWhere('content', 'LIKE', "%{$query}%")
-        ->with('author')
-        ->get();
-
-    return response()->json($articles);
-}
-
-
-    /**
-     * Store a newly created article.
-     */
+    // Création
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'title' => 'required|max:255',
-        'content' => 'required',
-        'author_id' => 'required|exists:users,id',
-        'image_path' => 'nullable|string',
-    ]);
+    {
+        $validated = $request->validate([
+            'title' => 'required|max:255',
+            'content' => 'required',
+            'author_id' => 'required|exists:users,id',
+            'image_path' => 'nullable|string',
+        ]);
 
-    $article = Article::create([
-        'title' => $validated['title'],
-        'content' => $validated['content'],
-        'author_id' => $validated['author_id'],
-        'image_path' => $validated['image_path'] ?? null,
-        'published_at' => now(),
-    ]);
+        $article = Article::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author_id' => $validated['author_id'],
+            'image_path' => $validated['image_path'] ?? null,
+            'published_at' => now(),
+        ]);
 
-    // Invalider les caches
-    Cache::forget('articles:list');
-    Cache::forget('stats'); // ← Ajouter cette ligne
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
 
-    return response()->json($article, 201);
-}
+        return response()->json($article, 201);
+    }
 
-    /**
-     * Update the specified article.
-     */
+    // Mise à jour
     public function update(Request $request, $id)
-{
-    $article = Article::findOrFail($id);
+    {
+        $article = Article::findOrFail($id);
 
-    $validated = $request->validate([
-        'title' => 'sometimes|required|max:255',
-        'content' => 'sometimes|required',
-    ]);
+        $validated = $request->validate([
+            'title' => 'sometimes|required|max:255',
+            'content' => 'sometimes|required',
+        ]);
 
-    $article->update($validated);
+        $article->update($validated);
 
-    // Invalider les caches
-    Cache::forget('articles:list');
-    Cache::forget('stats'); // ← Ajouter cette ligne
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
 
-    return response()->json($article);
-}
+        return response()->json($article);
+    }
 
-    /**
-     * Remove the specified article.
-     */
+    // Suppression optimisée
     public function destroy($id)
-{
-    // ✅ Corriger pour supprimer un article
-    $article = Article::findOrFail($id);
-    $article->delete();
+    {
+        $article = Article::with('comments')->findOrFail($id);
 
-    // Invalider les caches
-    Cache::forget('articles:list');
-    Cache::forget('stats'); // Ajouter l'invalidation du cache stats
+        // Supprime tous les commentaires liés
+        $article->comments()->delete();
 
-    return response()->json(['success' => true]);
+        // Supprime l'article
+        $article->delete();
+
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
+
+        return response()->json([
+            'message' => 'Article and related comments deleted successfully',
+            'deleted_article_id' => $id,
+            'deleted_comments_count' => $article->comments->count(),
+        ]);
+    }
 }
-
-}
-
