@@ -5,29 +5,66 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
 {
     // Liste des articles
     public function index(Request $request)
     {
-        $articles = Article::with(['author', 'comments'])->get();
+        $cacheKey = 'articles:list';
 
+        // Mode performance test
         if ($request->has('performance_test')) {
-            $articles->each(fn($a) => usleep(30000)); // simule le coût N+1
+            DB::enableQueryLog();
+
+            $items = Article::with(['author', 'comments'])->get();
+
+            $queryCount = count(DB::getQueryLog());
+
+            $articles = $items->map(fn($article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => strlen($article->content) > 200 
+                    ? substr($article->content, 0, 200) . '...' 
+                    : $article->content,
+                'author' => $article->author->name,
+                'comments_count' => $article->comments->count(),
+                'published_at' => $article->published_at,
+                'created_at' => $article->created_at,
+            ]);
+
+            Log::info("PERF-001: $queryCount queries (optimized with eager loading)");
+
+            return response()->json([
+                'data' => $articles,
+                'performance' => [
+                    'query_count' => $queryCount,
+                    'optimization' => 'eager_loading',
+                    'expected_queries' => 3,
+                    'status' => $queryCount <= 3 ? 'optimized' : 'needs_optimization'
+                ]
+            ]);
         }
 
-        $results = $articles->map(fn($article) => [
-            'id' => $article->id,
-            'title' => $article->title,
-            'content' => substr($article->content, 0, 200) . '...',
-            'author' => $article->author->name,
-            'comments_count' => $article->comments->count(),
-            'published_at' => $article->published_at,
-            'created_at' => $article->created_at,
-        ]);
+        // Mode normal avec cache
+        $articles = Cache::remember($cacheKey, 60, function () {
+            $items = Article::with(['author', 'comments'])->get();
+            return $items->map(fn($article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => strlen($article->content) > 200 
+                    ? substr($article->content, 0, 200) . '...' 
+                    : $article->content,
+                'author' => $article->author->name,
+                'comments_count' => $article->comments->count(),
+                'published_at' => $article->published_at,
+                'created_at' => $article->created_at,
+            ]);
+        });
 
-        return response()->json($results);
+        return response()->json($articles);
     }
 
     // Détail d’un article
@@ -90,6 +127,10 @@ class ArticleController extends Controller
             'published_at' => now(),
         ]);
 
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
+
         return response()->json($article, 201);
     }
 
@@ -105,6 +146,10 @@ class ArticleController extends Controller
 
         $article->update($validated);
 
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
+
         return response()->json($article);
     }
 
@@ -118,6 +163,10 @@ class ArticleController extends Controller
 
         // Supprime l'article
         $article->delete();
+
+        // Invalider caches
+        Cache::forget('articles:list');
+        Cache::forget('stats');
 
         return response()->json([
             'message' => 'Article and related comments deleted successfully',
