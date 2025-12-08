@@ -3,41 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ArticleController extends Controller
 {
-    /**
-     * Display a listing of articles.
-     */
+    // Liste des articles
     public function index(Request $request)
     {
-        $articles = Article::all();
+        $articles = Article::with(['author', 'comments'])->get();
 
-        $articles = $articles->map(function ($article) use ($request) {
-            if ($request->has('performance_test')) {
-                usleep(30000); // 30ms par article pour simuler le coût du N+1
-            }
+        if ($request->has('performance_test')) {
+            $articles->each(fn($a) => usleep(30000)); // simule le coût N+1
+        }
 
-            return [
-                'id' => $article->id,
-                'title' => $article->title,
-                'content' => substr($article->content, 0, 200) . '...',
-                'author' => $article->author->name,
-                'comments_count' => $article->comments->count(),
-                'published_at' => $article->published_at,
-                'created_at' => $article->created_at,
-            ];
-        });
+        $results = $articles->map(fn($article) => [
+            'id' => $article->id,
+            'title' => $article->title,
+            'content' => substr($article->content, 0, 200) . '...',
+            'author' => $article->author->name,
+            'comments_count' => $article->comments->count(),
+            'published_at' => $article->published_at,
+            'created_at' => $article->created_at,
+        ]);
 
-        return response()->json($articles);
+        return response()->json($results);
     }
 
-    /**
-     * Display the specified article.
-     */
+    // Détail d’un article
     public function show($id)
     {
         $article = Article::with(['author', 'comments.user'])->findOrFail($id);
@@ -51,40 +44,35 @@ class ArticleController extends Controller
             'image_path' => $article->image_path,
             'published_at' => $article->published_at,
             'created_at' => $article->created_at,
-            'comments' => $article->comments->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'user' => $comment->user->name,
-                    'created_at' => $comment->created_at,
-                ];
-            }),
+            'comments' => $article->comments->map(fn($comment) => [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'user' => $comment->user->name,
+                'created_at' => $comment->created_at,
+            ]),
         ]);
     }
 
-    /**
-     * Search articles.
-     */
-public function search(Request $request)
-{
-    $query = $request->input('q');
+    // Recherche sécurisée
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+        if (!$query) return response()->json([]);
 
-    if (!$query) {
-        return response()->json([]);
+        $articles = DB::select(
+            "SELECT * FROM articles WHERE title LIKE ?",
+            ["%{$query}%"]
+        );
+
+        return response()->json(array_map(fn($article) => [
+            'id' => $article->id,
+            'title' => $article->title,
+            'content' => substr($article->content, 0, 200),
+            'published_at' => $article->published_at,
+        ], $articles));
     }
 
-    $articles = Article::where('title', 'LIKE', "%{$query}%")
-        ->orWhere('content', 'LIKE', "%{$query}%")
-        ->with('author')
-        ->get();
-
-    return response()->json($articles);
-}
-
-
-    /**
-     * Store a newly created article.
-     */
+    // Création
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -105,9 +93,7 @@ public function search(Request $request)
         return response()->json($article, 201);
     }
 
-    /**
-     * Update the specified article.
-     */
+    // Mise à jour
     public function update(Request $request, $id)
     {
         $article = Article::findOrFail($id);
@@ -122,30 +108,21 @@ public function search(Request $request)
         return response()->json($article);
     }
 
-    /**
-     * Remove the specified article.
-     */
+    // Suppression optimisée
     public function destroy($id)
-{
-    // 1. Récupérer le commentaire à supprimer
-    $comment = Comment::findOrFail($id);
+    {
+        $article = Article::with('comments')->findOrFail($id);
 
-    // 2. Sauvegarder l'ID de l'article AVANT suppression
-    $articleId = $comment->article_id;
+        // Supprime tous les commentaires liés
+        $article->comments()->delete();
 
-    // 3. Supprimer le commentaire
-    $comment->delete();
-    
-    // 4. Récupérer tous les commentaires restants de l'article
-    $remainingComments = Comment::where('article_id', $articleId)->get();
-    
-    
-    return response()->json([
-        'success' => true,
-        'remaining_count' => $remainingComments->count(),
-        'first' => $remainingComments->first()
-    ]);
+        // Supprime l'article
+        $article->delete();
+
+        return response()->json([
+            'message' => 'Article and related comments deleted successfully',
+            'deleted_article_id' => $id,
+            'deleted_comments_count' => $article->comments->count(),
+        ]);
+    }
 }
-
-}
-
