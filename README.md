@@ -114,7 +114,7 @@ Voir **[CHALLENGE.md](./CHALLENGE.md)** pour les détails du workflow Git
 
 Temps estimé : **8-10 heures** selon votre niveau.
 
-**Mon temps réel** : ~9 heures réparties sur 4 sessions de travail
+**Mon temps réel** : ~5 heures réparties sur 2 sessions de travail
 
 ---
 
