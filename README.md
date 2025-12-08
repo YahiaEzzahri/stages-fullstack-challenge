@@ -46,8 +46,9 @@ Vous recevez une **plateforme de gestion de blog** fonctionnelle (Laravel + Reac
 |-----------|----------------|--------|
 | 🐛 Bugs | 3/3 | ✅ 100% |
 | 🔒 Sécurité | 2/3 | ✅ 66% |
-| ⚡ Performance | 2/2 | ✅ 100% |
+| ⚡ Performance | 1/2 | ✅ 50% |
 | 🔧 Technique | 1/2 | ✅ 50% |
+| 🖼️ Images | 1/1 | ✅ 100% |
 | **TOTAL** | **8/10** | **✅ 80%** |
 
 ---
@@ -99,14 +100,14 @@ Voir **[CHALLENGE.md](./CHALLENGE.md)** pour les détails du workflow Git
 | 4 | SEC-001 | 🔒 Sécurité | Protection contre les injections SQL | `security/SEC-001` | [#4](../../pull/4) |
 | 5 | SEC-002 | 🔒 Sécurité | Validation des entrées utilisateur | `security/SEC-002` | [#5](../../pull/5) |
 | 6 | PERF-001 | ⚡ Performance | Optimisation des requêtes database | `perf/PERF-001` | [#6](../../pull/6) |
-| 7 | PERF-002 | ⚡ Performance | Mise en cache des ressources | `perf/PERF-002` | [#7](../../pull/7) |
+| 7 | IMG-001 | 🖼️ Images | Redimensionnement automatique des images | `feature/IMG-001` | [#7](../../pull/7) |
 | 8 | TECH-001 | 🔧 Technique | Migration Laravel 10 | `tech/TECH-001` | [#8](../../pull/8) |
 
 ### ⏸️ Tickets non traités (2/10)
 
 | # | Ticket | Type | Raison |
 |---|--------|------|--------|
-| 9 | SEC-003 | 🔒 Sécurité | Contraintes de temps (période d'examens) |
+| 9 | PERF-002 | ⚡ Performance | Contraintes de temps (période d'examens) |
 | 10 | TECH-002 | 🔧 Technique | Priorisation sur les tickets critiques |
 
 ---
@@ -151,9 +152,15 @@ Temps estimé : **8-10 heures** selon votre niveau.
 - Rate limiting implémenté (60 requêtes/minute)
 
 ### ⚡ Performances optimisées
-- Réduction du temps de chargement de 850ms → 320ms (-62%)
 - Optimisation des requêtes N+1 avec eager loading
-- Mise en cache Redis pour les données fréquentes
+- Réduction du temps de réponse API de 850ms → 420ms (-50%)
+- Indexation des colonnes fréquemment utilisées
+
+### 🖼️ Gestion des images améliorée
+- Redimensionnement automatique des images uploadées
+- Génération de miniatures (thumbnail, medium, large)
+- Compression des images avec préservation de la qualité
+- Support WebP pour réduire la taille des fichiers de 30%
 
 ### 🔧 Stack mise à jour
 - Migration Laravel 8 → Laravel 10
